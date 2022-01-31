@@ -3,7 +3,7 @@ import httpx
 
 from .const import API_URL, COUNTY_LIST
 
-async def get_outage_count(self, county):
+async def get_outage_count(county):
     """Get the outage count for the given county."""
     if county not in COUNTY_LIST:
         raise InvalidCountyError(f"{county} is not a valid county")

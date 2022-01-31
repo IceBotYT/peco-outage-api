@@ -8,4 +8,5 @@ src/peco/peco.py
 src/peco.egg-info/PKG-INFO
 src/peco.egg-info/SOURCES.txt
 src/peco.egg-info/dependency_links.txt
+src/peco.egg-info/requires.txt
 src/peco.egg-info/top_level.txt
