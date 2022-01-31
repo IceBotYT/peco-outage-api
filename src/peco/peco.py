@@ -15,6 +15,7 @@ async def get_outage_count(self, county):
         raise HttpError("Error getting PECO outage counter data")
         
     data = r.json()
+    
     try:
         areas = data["file_data"]["areas"]
     except KeyError as err:
