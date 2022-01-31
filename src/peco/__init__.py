@@ -23,7 +23,7 @@ async def get_outage_count(county):
 
     outage_dict = {}
     for area in areas:
-        if area["name"] == self.county:
+        if area["name"] == county:
             customers_out = area["cust_a"]["val"]
             percent_customers_out = area["percent_cust_a"]["val"]
             outage_count = area["n_out"]
@@ -36,7 +36,6 @@ async def get_outage_count(county):
             }
     return outage_dict
 
-@staticmethod
 async def get_outage_totals():
     """Get the outage totals for the given county and mode."""
     async with httpx.AsyncClient() as client:

@@ -4,7 +4,6 @@ pyproject.toml
 setup.cfg
 src/peco/__init__.py
 src/peco/const.py
-src/peco/peco.py
 src/peco.egg-info/PKG-INFO
 src/peco.egg-info/SOURCES.txt
 src/peco.egg-info/dependency_links.txt
