@@ -1,7 +1,7 @@
 """Main object for getting the PECO outage counter data."""
 import aiohttp
 
-from .const import API_URL, COUNTY_LIST
+from .const import API_URL, COUNTY_LIST, REPORT_URL
 
 class PecoOutageApi:
     """Main object for getting the PECO outage counter data."""
@@ -27,6 +27,25 @@ class PecoOutageApi:
                     r = r
                     data = await r.json()
 
+        if r.status != 200:
+            raise HttpError("Error getting PECO outage counter data")
+        
+        try:
+            id_that_has_the_report = data["data"]["interval_generation_data"]
+        except KeyError as err:
+            raise BadJSONError("Error getting PECO outage counter data") from err
+        
+        report_url = REPORT_URL.format(id_that_has_the_report)
+        if websession is not None:
+            async with websession.get(report_url) as r:
+                r = r
+                data = await r.json()
+        else:
+            async with aiohttp.ClientSession() as session:
+                async with session.get(report_url) as r:
+                    r = r
+                    data = await r.json()
+        
         if r.status != 200:
             raise HttpError("Error getting PECO outage counter data")
         
@@ -63,6 +82,25 @@ class PecoOutageApi:
                     r = r
                     data = await r.json()
 
+        if r.status != 200:
+            raise HttpError("Error getting PECO outage counter data")
+
+        try:
+            id_that_has_the_report = data["data"]["interval_generation_data"]
+        except KeyError as err:
+            raise BadJSONError("Error getting PECO outage counter data") from err
+        
+        report_url = REPORT_URL.format(id_that_has_the_report)
+        if websession is not None:
+            async with websession.get(report_url) as r:
+                r = r
+                data = await r.json()
+        else:
+            async with aiohttp.ClientSession() as session:
+                async with session.get(report_url) as r:
+                    r = r
+                    data = await r.json()
+        
         if r.status != 200:
             raise HttpError("Error getting PECO outage counter data")
 
