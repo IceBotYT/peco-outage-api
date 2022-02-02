@@ -9,5 +9,3 @@ echo !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 echo ENTER YOUR PASSWORD NOW
 echo !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 twine upload dist/*
-sudo python3 -m pip uninstall peco
-sudo python3 -m pip install peco
