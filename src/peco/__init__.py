@@ -4,6 +4,11 @@ import aiohttp
 from .const import API_URL, COUNTY_LIST
 
 class PecoOutageApi:
+    """Main object for getting the PECO outage counter data."""
+    def __init__(self):
+        """Initialize the PECO outage counter object."""
+        pass
+
     async def get_outage_count(county, websession=None):
         """Get the outage count for the given county."""
         if not isinstance(county, str):
