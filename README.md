@@ -5,16 +5,21 @@ A library for interacting with the [PECO outage map](https://www.peco.com/Outage
 Interacting with the API is simple.
 
 ```python
-from peco import get_outage_count, get_outage_totals
+from peco import PecoOutageApi
 
-# How many customers are affected by an outage in Bucks county?
-print(get_outage_count('BUCKS')["customers_out"])
+async def get_data():
+    api = PecoOutageApi()
+    # How many customers are affected by an outage in Bucks county?
+    print(await api.get_outage_count('BUCKS')["customers_out"])
 
-# What is the total outage count for the entire region?
-print(get_outage_totals()["outage_count"])
+    # What is the total outage count for the entire region?
+    print(await api.get_outage_totals()["outage_count"])
 
-# What is the percentage of customers that are affected by an outage?
-print(get_outage_totals()["percent_customers_out"])
+    # What is the percentage of customers that are affected by an outage?
+    print(await api.get_outage_totals()["percent_customers_out"])
+
+import asyncio
+asyncio.run(get_data())
 ```
 
 *Note:* The `percent_customers_out` key does not go below 5%. It will show up as `4.999999` instead. Make sure to take this into account when using the API.

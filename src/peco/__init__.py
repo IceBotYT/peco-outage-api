@@ -9,7 +9,7 @@ class PecoOutageApi:
         """Initialize the PECO outage counter object."""
         pass
 
-    async def get_outage_count(county, websession=None):
+    async def get_outage_count(self, county, websession=None):
         """Get the outage count for the given county."""
         if not isinstance(county, str):
             raise ValueError("County must be specified")
@@ -50,6 +50,7 @@ class PecoOutageApi:
                 }
         return outage_dict
 
+    @staticmethod
     async def get_outage_totals(websession=None):
         """Get the outage totals for the given county and mode."""
         if websession is not None:
