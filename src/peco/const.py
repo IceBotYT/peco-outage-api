@@ -8,3 +8,6 @@ COUNTY_LIST = [
     "PHILADELPHIA",
     "YORK",
 ]
+QUERY_URL = "https://secure.peco.com/.euapi/mobile/custom/anon/PECO/outage/query"
+PRECHECK_URL = "https://secure.peco.com/.euapi/mobile/custom/anon/PECO/outage/precheck"
+PING_URL = "https://secure.peco.com/.euapi/mobile/custom/anon/PECO/outage/ping"

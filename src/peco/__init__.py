@@ -1,7 +1,7 @@
 """Main object for getting the PECO outage counter data."""
 import aiohttp
 
-from .const import API_URL, COUNTY_LIST, REPORT_URL
+from .const import API_URL, COUNTY_LIST, REPORT_URL, PRECHECK_URL, QUERY_URL, PING_URL
 
 class PecoOutageApi:
     """Main object for getting the PECO outage counter data."""
@@ -115,15 +115,78 @@ class PecoOutageApi:
             "outage_count": totals["n_out"],
             "customers_served": totals["cust_s"],
         }
+    
+    @staticmethod
+    async def meter_check(phone_number, websession=None):
+        """Check if power is being delivered to the house."""
+        if len(phone_number) != 10:
+            raise ValueError("Phone number must be 10 digits")
+        
+        if not phone_number.isdigit():
+            raise ValueError("Phone number must be numeric")
+        
+        if not isinstance(phone_number, str):
+            raise ValueError("Phone number must be a string")
+        
+        if websession is not None:
+            async with websession.post(QUERY_URL, json={"phone": phone_number}) as response:
+                response = await response.json(content_type='text/html')
+        else:
+            async with aiohttp.ClientSession() as session:
+                async with session.post(QUERY_URL, json={"phone": phone_number}) as response:
+                    response = await response.json(content_type='text/html')
 
+        if response["success"] != True:
+            raise HttpError("Error checking meter")
+        
+        if response["data"][0]["smartMeterStatus"] == False:
+            raise IncompatibleMeterError("Meter is not compatible with smart meter checking")
+        
+        auid = response["data"][0]["auid"]
+        acc_number = response["data"][0]["accountNumber"]
+
+        if websession is not None:
+            async with websession.post(PRECHECK_URL, json={"auid": auid, "accountNumber": acc_number, "phone": phone_number}) as response:
+                response = await response.json(content_type='text/html')
+        else:
+            async with aiohttp.ClientSession() as session:
+                async with session.post(PRECHECK_URL, json={"auid": auid, "accountNumber": acc_number, "phone": phone_number}) as response:
+                    response = await response.json(content_type='text/html')
+        
+        if response["success"] != True:
+            raise HttpError("Error checking meter")
+        
+        if response["data"]["meterPing"] == False:
+            raise UnresponsiveMeterError("Meter is not responding")
+        
+        if websession is not None:
+            async with websession.post(PING_URL, json={"auid": auid, "accountNumber": acc_number}) as response:
+                response = await response.json(content_type='text/html')
+        else:
+            async with aiohttp.ClientSession() as session:
+                async with session.post(PING_URL, json={"auid": auid, "accountNumber": acc_number}) as response:
+                    response = await response.json(content_type='text/html')
+        
+        if response["success"] != True:
+            raise HttpError("Error checking meter")
+        
+        return response["data"]["meterInfo"]["pingResult"]
+        
 
 class InvalidCountyError(ValueError):
     """Raised when the county is invalid."""
 
-
 class HttpError(Exception):
     """Raised when the status code is not 200."""
 
-
 class BadJSONError(Exception):
     """Raised when the JSON is invalid."""
+
+class MeterError(Exception):
+    """Generic meter error."""
+class IncompatibleMeterError(MeterError):
+    """Raised when the meter is not compatible with the API."""
+
+class UnresponsiveMeterError(MeterError):
+    """Raised when the meter is not responding."""
+
