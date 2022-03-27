@@ -5,6 +5,7 @@ from typing import Any
 import aiohttp
 
 from .const import API_URL, COUNTY_LIST, REPORT_URL, PRECHECK_URL, QUERY_URL, PING_URL
+from pydantic import BaseModel
 
 class PecoOutageApi:
     """Main object for getting the PECO outage counter data."""
@@ -12,7 +13,7 @@ class PecoOutageApi:
         """Initialize the PECO outage counter object."""
         pass
 
-    async def get_outage_count(self, county: str, websession: aiohttp.ClientSession | None=None) -> dict[str, int]:
+    async def get_outage_count(self, county: str, websession: aiohttp.ClientSession | None=None) -> OutageResults:
         """Get the outage count for the given county."""
 
         if county not in COUNTY_LIST:
@@ -51,23 +52,23 @@ class PecoOutageApi:
         except KeyError as err:
             raise BadJSONError("Bad JSON returned from PECO outage counter") from err
 
-        outage_dict = {}
+        outage_result: OutageResults = OutageResults(customers_out=0, percent_customers_out=0, outage_count=0, customers_served=0)
         for area in areas:
             if area["name"] == county:
-                customers_out: int = area["cust_a"]["val"]
-                percent_customers_out: int = area["percent_cust_a"]["val"]
-                outage_count: int = area["n_out"]
-                customers_served: int = area["cust_s"]
-                outage_dict = {
-                    "customers_out": customers_out,
-                    "percent_customers_out": percent_customers_out,
-                    "outage_count": outage_count,
-                    "customers_served": customers_served,
-                }
-        return outage_dict
+                customers_out = area["cust_a"]["val"]
+                percent_customers_out = area["percent_cust_a"]["val"]
+                outage_count = area["n_out"]
+                customers_served = area["cust_s"]
+                outage_result = OutageResults(
+                    customers_out=customers_out,
+                    percent_customers_out=percent_customers_out,
+                    outage_count=outage_count,
+                    customers_served=customers_served
+                )
+        return outage_result
 
     @staticmethod
-    async def get_outage_totals(websession: aiohttp.ClientSession | None=None) -> dict[str, int]:
+    async def get_outage_totals(websession: aiohttp.ClientSession | None=None) -> OutageResults:
         """Get the outage totals for the given county and mode."""
         if websession is not None:
             async with websession.get(API_URL) as r:
@@ -102,12 +103,12 @@ class PecoOutageApi:
         except KeyError as err:
             raise BadJSONError("Bad JSON returned from PECO outage counter") from err
 
-        return {
-            "customers_out": totals["cust_a"]["val"],
-            "percent_customers_out": totals["percent_cust_a"]["val"],
-            "outage_count": totals["n_out"],
-            "customers_served": totals["cust_s"],
-        }
+        return OutageResults(
+            customers_out=totals["cust_a"]["val"],
+            percent_customers_out=totals["percent_cust_a"]["val"],
+            outage_count=totals["n_out"],
+            customers_served=totals["cust_s"]
+        )
     
     @staticmethod
     async def meter_check(phone_number: str, websession: aiohttp.ClientSession | None=None) -> bool:
@@ -167,7 +168,13 @@ class PecoOutageApi:
                     ping_result = bool(data3["data"]["meterInfo"]["pingResult"])
         
         return ping_result
-        
+    
+class OutageResults(BaseModel):
+    customers_out: int
+    percent_customers_out: int
+    outage_count: int
+    customers_served: int
+
 
 class InvalidCountyError(ValueError):
     """Raised when the county is invalid."""
