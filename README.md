@@ -10,13 +10,13 @@ from peco import PecoOutageApi
 async def get_data():
     api = PecoOutageApi()
     # How many customers are affected by an outage in Bucks county?
-    print(await api.get_outage_count('BUCKS')["customers_out"])
+    print(await api.get_outage_count('BUCKS').customers_out)
 
     # What is the total outage count for the entire region?
-    print(await api.get_outage_totals()["outage_count"])
+    print(await api.get_outage_totals().outage_count)
 
     # What is the percentage of customers that are affected by an outage?
-    print(await api.get_outage_totals()["percent_customers_out"])
+    print(await api.get_outage_totals().percent_customers_out)
 
 import asyncio
 asyncio.run(get_data())
