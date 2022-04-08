@@ -4,7 +4,7 @@ from __future__ import annotations
 from typing import Any
 import aiohttp
 
-from .const import API_URL, COUNTY_LIST, REPORT_URL, PRECHECK_URL, QUERY_URL, PING_URL
+from .const import *
 from pydantic import BaseModel
 
 class PecoOutageApi:
@@ -13,7 +13,8 @@ class PecoOutageApi:
         """Initialize the PECO outage counter object."""
         pass
 
-    async def get_outage_count(self, county: str, websession: aiohttp.ClientSession | None=None) -> OutageResults:
+    @staticmethod
+    async def get_outage_count(county: str, websession: aiohttp.ClientSession | None=None) -> OutageResults:
         """Get the outage count for the given county."""
 
         if county not in COUNTY_LIST:
@@ -169,11 +170,58 @@ class PecoOutageApi:
         
         return ping_result
     
+    @staticmethod
+    async def get_map_alerts(websession: aiohttp.ClientSession | None=None) -> AlertResults:
+        """Get the alerts that show on the outage map."""
+        if websession is not None:
+            async with websession.get(API_URL) as r:
+                data = await r.json()
+        else:
+            async with aiohttp.ClientSession() as session:
+                async with session.get(API_URL) as r:
+                    data = await r.json()
+        
+        if r.status != 200:
+            raise HttpError("Error getting PECO outage counter data")
+        
+        try:
+            alert_deployment_id: str = data["controlCenter"]["alertDeploymentId"]
+        except KeyError as err:
+            raise BadJSONError("Error getting PECO outage counter data") from err
+        
+        alerts_url = ALERTS_URL.format(alert_deployment_id)
+        if websession is not None:
+            async with websession.get(alerts_url) as r:
+                data1 = await r.json()
+        else:
+            async with aiohttp.ClientSession() as session:
+                async with session.get(alerts_url) as r:
+                    data1 = await r.json()
+
+        if r.status != 200:
+            raise HttpError("Error getting PECO outage counter data")
+
+        try:
+            alert = data1["_embedded"]["deployedAlertResourceList"][0]["data"][0] # There is always only one alert
+        except KeyError as err:
+            raise BadJSONError("Error getting PECO outage counter data") from err
+        
+        parsed_content = TAG_RE.sub('', alert["content"].replace("<br />", "\n\n"))
+
+        return AlertResults(
+            alert_content=parsed_content,
+            alert_title=alert["bannerTitle"],
+        )
+    
 class OutageResults(BaseModel):
     customers_out: int
     percent_customers_out: int
     outage_count: int
     customers_served: int
+
+class AlertResults(BaseModel):
+    alert_content: str
+    alert_title: str
 
 
 class InvalidCountyError(ValueError):
