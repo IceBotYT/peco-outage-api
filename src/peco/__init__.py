@@ -204,7 +204,12 @@ class PecoOutageApi:
         try:
             alert = data1["_embedded"]["deployedAlertResourceList"][0]["data"][0] # There is always only one alert
         except KeyError as err:
-            raise BadJSONError("Error getting PECO outage counter data") from err
+            # I am making the assumption that there are no alerts. I have never seen the response when there are no alerts.
+            # This API is undocumented. If anyone finds out the response when there are no alerts, please open an issue.
+            return AlertResults(
+                alert_content="",
+                alert_title="",
+            )
         
         parsed_content = TAG_RE.sub('', alert["content"].replace("<br />", "\n\n"))
 
