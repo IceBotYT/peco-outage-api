@@ -210,6 +210,12 @@ class PecoOutageApi:
                 alert_content="",
                 alert_title="",
             )
+
+        if alert["bannerTitle"] == "Using the Outage Map": # junk data
+            return AlertResults(
+                alert_content="",
+                alert_title="",
+            )
         
         parsed_content = TAG_RE.sub('', alert["content"].replace("<br />", "\n\n"))
 
