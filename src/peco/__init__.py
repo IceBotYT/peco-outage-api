@@ -33,6 +33,7 @@ class PecoOutageApi:
         websession: aiohttp.ClientSession | None = None,
     ) -> dict[str, Any]:
         """Make a GET request to the API."""
+        data: dict[str, Any]
         if websession is not None:
             async with websession.get(url) as r:
                 data = await r.json()
@@ -41,7 +42,7 @@ class PecoOutageApi:
                 data = await r.json()
 
         if r.status != STATUS_OK:
-            raise HttpError(r.status)
+            raise HttpError
 
         return data
 
@@ -63,7 +64,7 @@ class PecoOutageApi:
                 data = await r.json(content_type="text/html")
 
         if r.status != STATUS_OK:
-            raise HttpError(r.status)
+            raise HttpError
 
         return data
 
@@ -213,9 +214,7 @@ class PecoOutageApi:
         # There is always only one alert.
         # Again, if anyone sees more than one alert, please open an issue.
         try:
-            alert = data1["_embedded"]["deployedAlertResourceList"][0]["data"][
-                0
-            ]
+            alert = data1["_embedded"]["deployedAlertResourceList"][0]["data"][0]
         except KeyError:
             return AlertResults(
                 alert_content="",
@@ -252,14 +251,14 @@ class InvalidCountyError(ValueError):
 class HttpError(Exception):
     """Raised when an error during HTTP request occurs."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__("Bad response from PECO")
 
 
 class BadJSONError(Exception):
     """Raised when the JSON is invalid."""
 
-    def __init__(self, message="Bad JSON returned from PECO"):
+    def __init__(self, message: str = "Bad JSON returned from PECO") -> None:
         super().__init__(message)
 
 
@@ -270,12 +269,12 @@ class MeterError(Exception):
 class IncompatibleMeterError(MeterError):
     """Raised when the meter is not compatible with the API."""
 
-    def __init__(self):
+    def __init__(self) -> None:
         super().__init__("Meter is not compatible with the API")
 
 
 class UnresponsiveMeterError(MeterError):
     """Raised when the meter is not responding."""
 
-    def __init__(self, message="Meter is not responding"):
+    def __init__(self, message: str = "Meter is not responding") -> None:
         super().__init__(message)
