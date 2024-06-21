@@ -1,8 +1,8 @@
 # PECO Outage API
 
-[![PyPI](https://img.shields.io/pypi/v/peco-outage-api?style=flat-square)](https://pypi.python.org/pypi/peco-outage-api/)
-[![PyPI - Python Version](https://img.shields.io/pypi/pyversions/peco-outage-api?style=flat-square)](https://pypi.python.org/pypi/peco-outage-api/)
-[![PyPI - License](https://img.shields.io/pypi/l/peco-outage-api?style=flat-square)](https://pypi.python.org/pypi/peco-outage-api/)
+[![PyPI](https://img.shields.io/pypi/v/peco?style=flat-square)](https://pypi.python.org/pypi/peco/)
+[![PyPI - Python Version](https://img.shields.io/pypi/pyversions/peco?style=flat-square)](https://pypi.python.org/pypi/peco/)
+[![PyPI - License](https://img.shields.io/pypi/l/peco?style=flat-square)](https://pypi.python.org/pypi/peco/)
 [![Coookiecutter - Wolt](https://img.shields.io/badge/cookiecutter-Wolt-00c2e8?style=flat-square&logo=cookiecutter&logoColor=D4AA00&link=https://github.com/woltapp/wolt-python-package-cookiecutter)](https://github.com/woltapp/wolt-python-package-cookiecutter)
 
 
@@ -12,7 +12,7 @@
 
 **Source Code**: [https://github.com/IceBotYT/peco-outage-api](https://github.com/IceBotYT/peco-outage-api)
 
-**PyPI**: [https://pypi.org/project/peco-outage-api/](https://pypi.org/project/peco-outage-api/)
+**PyPI**: [https://pypi.org/project/peco/](https://pypi.org/project/peco/)
 
 ---
 
@@ -21,7 +21,7 @@ A library for interacting with the PECO outage map to gain the numbers from it.
 ## Installation
 
 ```sh
-pip install peco-outage-api
+pip install peco
 ```
 
 ## Development
