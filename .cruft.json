@@ -1,0 +1,18 @@
+{
+  "template": "https://github.com/woltapp/wolt-python-package-cookiecutter",
+  "commit": "b25684a2c63387153b83a1cc03ea332be8c8279a",
+  "checkout": null,
+  "context": {
+    "cookiecutter": {
+      "author_name": "IceBotYT",
+      "author_email": "icebotyt@outlook.com",
+      "github_username": "IceBotYT",
+      "project_name": "PECO Outage API",
+      "project_slug": "peco-outage-api",
+      "package_name": "peco",
+      "project_short_description": "A library for interacting with the PECO outage map to gain the numbers from it.",
+      "_template": "https://github.com/woltapp/wolt-python-package-cookiecutter"
+    }
+  },
+  "directory": null
+}
