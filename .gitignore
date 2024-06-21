@@ -77,3 +77,6 @@ venv.bak/
 
 # IDEs
 .idea/
+
+# Ruff
+.ruff_cache/

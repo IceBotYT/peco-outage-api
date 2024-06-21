@@ -1,6 +1,6 @@
-from typing import Final
-import re
 import logging
+import re
+from typing import Final
 
 API_URL: Final = (
     "https://kubra.io/stormcenter/api/v1/stormcenters/39e6d9f3-fdea-4539-848f-b8631945da6f/views/74de8a50-3f45-4f6a-9483-fd618bb9165d/currentState?preview=false"
@@ -26,3 +26,5 @@ ALERTS_URL: Final = (
 )
 TAG_RE: Final = re.compile(r"<[^>]+>")
 LOGGER: Final = logging.getLogger(__package__)
+STATUS_OK: Final = 200
+PHONE_NUMBER_LENGTH: Final = 10

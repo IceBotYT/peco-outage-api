@@ -3,10 +3,22 @@
 from __future__ import annotations
 
 from typing import Any
-import aiohttp
 
-from .const import *
+import aiohttp
 from pydantic import BaseModel
+
+from .const import (
+    ALERTS_URL,
+    API_URL,
+    COUNTY_LIST,
+    PHONE_NUMBER_LENGTH,
+    PING_URL,
+    PRECHECK_URL,
+    QUERY_URL,
+    REPORT_URL,
+    STATUS_OK,
+    TAG_RE,
+)
 
 
 class PecoOutageApi:
@@ -14,52 +26,77 @@ class PecoOutageApi:
 
     def __init__(self) -> None:
         """Initialize the PECO outage counter object."""
-        pass
 
     @staticmethod
+    async def get_request(
+        url: str,
+        websession: aiohttp.ClientSession | None = None,
+    ) -> dict[str, Any]:
+        """Make a GET request to the API."""
+        if websession is not None:
+            async with websession.get(url) as r:
+                data = await r.json()
+        else:
+            async with aiohttp.ClientSession() as session, session.get(url) as r:
+                data = await r.json()
+
+        if r.status != STATUS_OK:
+            raise HttpError(r.status)
+
+        return data
+
+    @staticmethod
+    async def post_request(
+        url: str,
+        data: dict[str, Any],
+        websession: aiohttp.ClientSession | None = None,
+    ) -> dict[str, Any]:
+        """Make a POST request to the API."""
+        if websession is not None:
+            async with websession.post(url, json=data) as r:
+                data = await r.json(content_type="text/html")
+        else:
+            async with aiohttp.ClientSession() as session, session.post(
+                url,
+                json=data,
+            ) as r:
+                data = await r.json(content_type="text/html")
+
+        if r.status != STATUS_OK:
+            raise HttpError(r.status)
+
+        return data
+
     async def get_outage_count(
-        county: str, websession: aiohttp.ClientSession | None = None
+        self: PecoOutageApi,
+        county: str,
+        websession: aiohttp.ClientSession | None = None,
     ) -> OutageResults:
         """Get the outage count for the given county."""
 
         if county not in COUNTY_LIST:
-            raise InvalidCountyError(f"{county} is not a valid county")
+            raise InvalidCountyError(county)
 
-        if websession is not None:
-            async with websession.get(API_URL) as r:
-                data = await r.json()
-        else:
-            async with aiohttp.ClientSession() as session:
-                async with session.get(API_URL) as r:
-                    data = await r.json()
-
-        if r.status != 200:
-            raise HttpError("Error getting PECO outage counter data")
+        data = await self.get_request(API_URL, websession)
 
         try:
             id_that_has_the_report: str = data["data"]["interval_generation_data"]
         except KeyError as err:
-            raise BadJSONError("Error getting PECO outage counter data") from err
+            raise BadJSONError from err
 
         report_url = REPORT_URL.format(id_that_has_the_report)
-        if websession is not None:
-            async with websession.get(report_url) as r:
-                data = await r.json()
-        else:
-            async with aiohttp.ClientSession() as session:
-                async with session.get(report_url) as r:
-                    data = await r.json()
-
-        if r.status != 200:
-            raise HttpError("Error getting PECO outage counter data")
+        data = await self.get_request(report_url, websession)
 
         try:
             areas: list[dict[str, Any]] = data["file_data"]["areas"]
         except KeyError as err:
-            raise BadJSONError("Bad JSON returned from PECO outage counter") from err
+            raise BadJSONError from err
 
         outage_result: OutageResults = OutageResults(
-            customers_out=0, percent_customers_out=0, outage_count=0, customers_served=0
+            customers_out=0,
+            percent_customers_out=0,
+            outage_count=0,
+            customers_served=0,
         )
         for area in areas:
             if area["name"] == county:
@@ -75,43 +112,25 @@ class PecoOutageApi:
                 )
         return outage_result
 
-    @staticmethod
     async def get_outage_totals(
+        self: PecoOutageApi,
         websession: aiohttp.ClientSession | None = None,
     ) -> OutageResults:
         """Get the outage totals for the given county and mode."""
-        if websession is not None:
-            async with websession.get(API_URL) as r:
-                data = await r.json()
-        else:
-            async with aiohttp.ClientSession() as session:
-                async with session.get(API_URL) as r:
-                    data = await r.json()
-
-        if r.status != 200:
-            raise HttpError("Error getting PECO outage counter data")
+        data = await self.get_request(API_URL, websession)
 
         try:
             id_that_has_the_report: str = data["data"]["interval_generation_data"]
         except KeyError as err:
-            raise BadJSONError("Error getting PECO outage counter data") from err
+            raise BadJSONError from err
 
         report_url = REPORT_URL.format(id_that_has_the_report)
-        if websession is not None:
-            async with websession.get(report_url) as r:
-                data = await r.json()
-        else:
-            async with aiohttp.ClientSession() as session:
-                async with session.get(report_url) as r:
-                    data = await r.json()
-
-        if r.status != 200:
-            raise HttpError("Error getting PECO outage counter data")
+        data = await self.get_request(report_url, websession)
 
         try:
             totals = data["file_data"]["totals"]
         except KeyError as err:
-            raise BadJSONError("Bad JSON returned from PECO outage counter") from err
+            raise BadJSONError from err
 
         return OutageResults(
             customers_out=totals["cust_a"]["val"],
@@ -120,129 +139,84 @@ class PecoOutageApi:
             customers_served=totals["cust_s"],
         )
 
-    @staticmethod
     async def meter_check(
-        phone_number: str, websession: aiohttp.ClientSession | None = None
+        self: PecoOutageApi,
+        phone_number: str,
+        websession: aiohttp.ClientSession | None = None,
     ) -> bool:
         """Check if power is being delivered to the house."""
-        if len(phone_number) != 10:
-            raise ValueError("Phone number must be 10 digits")
+        if len(phone_number) != PHONE_NUMBER_LENGTH:
+            msg = "Phone number must be 10 digits"
+            raise ValueError(msg)
 
         if not phone_number.isdigit():
-            raise ValueError("Phone number must be numeric")
+            msg = "Phone number must be numeric"
+            raise ValueError(msg)
 
-        data1: dict[str, Any]
-        if websession is not None:
-            async with websession.post(
-                QUERY_URL, json={"phone": phone_number}
-            ) as response:
-                data1 = await response.json(content_type="text/html")
-        else:
-            async with aiohttp.ClientSession() as session:
-                async with session.post(
-                    QUERY_URL, json={"phone": phone_number}
-                ) as response:
-                    data1 = await response.json(content_type="text/html")
+        data1 = await self.post_request(QUERY_URL, {"phone": phone_number}, websession)
 
-        if data1["success"] != True:
-            raise HttpError("Error checking meter")
+        if not data1["success"]:
+            raise HttpError
 
-        if data1["data"][0]["smartMeterStatus"] == False:
-            raise IncompatibleMeterError(
-                "Meter is not compatible with smart meter checking"
-            )
+        if not data1["data"][0]["smartMeterStatus"]:
+            raise IncompatibleMeterError
 
         auid = data1["data"][0]["auid"]
         acc_number = data1["data"][0]["accountNumber"]
 
-        data2: dict[str, Any]
-        if websession is not None:
-            async with websession.post(
-                PRECHECK_URL,
-                json={"auid": auid, "accountNumber": acc_number, "phone": phone_number},
-            ) as response:
-                data2 = await response.json(content_type="text/html")
-        else:
-            async with aiohttp.ClientSession() as session:
-                async with session.post(
-                    PRECHECK_URL,
-                    json={
-                        "auid": auid,
-                        "accountNumber": acc_number,
-                        "phone": phone_number,
-                    },
-                ) as response:
-                    data2 = await response.json(content_type="text/html")
+        data2 = await self.post_request(
+            PRECHECK_URL,
+            {
+                "auid": auid,
+                "accountNumber": acc_number,
+                "phone": phone_number,
+            },
+            websession,
+        )
 
-        if data2["success"] != True:
-            raise HttpError("Error checking meter")
+        if not data2["success"]:
+            raise HttpError
 
-        if data2["data"]["meterPing"] == False:
-            raise UnresponsiveMeterError("Meter is not responding")
+        if not data2["data"]["meterPing"]:
+            raise UnresponsiveMeterError
 
-        ping_result: bool
-        if websession is not None:
-            async with websession.post(
-                PING_URL, json={"auid": auid, "accountNumber": acc_number}
-            ) as response:
-                data3 = await response.json(content_type="text/html")
-                if data3["success"] != True:
-                    raise HttpError("Error checking meter")
-                ping_result = bool(data3["data"]["meterInfo"]["pingResult"])
-        else:
-            async with aiohttp.ClientSession() as session:
-                async with session.post(
-                    PING_URL, json={"auid": auid, "accountNumber": acc_number}
-                ) as response:
-                    data3 = await response.json(content_type="text/html")
-                    if data3["success"] != True:
-                        raise HttpError("Error checking meter")
-                    ping_result = bool(data3["data"]["meterInfo"]["pingResult"])
+        data3 = await self.post_request(
+            PING_URL,
+            {"auid": auid, "accountNumber": acc_number},
+            websession,
+        )
 
-        return ping_result
+        if not data3["success"]:
+            raise HttpError
 
-    @staticmethod
+        return bool(data3["data"]["meterInfo"]["pingResult"])
+
     async def get_map_alerts(
+        self: PecoOutageApi,
         websession: aiohttp.ClientSession | None = None,
     ) -> AlertResults:
         """Get the alerts that show on the outage map."""
-        if websession is not None:
-            async with websession.get(API_URL) as r:
-                data = await r.json()
-        else:
-            async with aiohttp.ClientSession() as session:
-                async with session.get(API_URL) as r:
-                    data = await r.json()
-
-        if r.status != 200:
-            raise HttpError("Error getting PECO outage counter data")
+        data = await self.get_request(API_URL, websession)
 
         try:
             alert_deployment_id: str = data["controlCenter"]["alertDeploymentId"]
         except KeyError as err:
-            raise BadJSONError("Error getting PECO outage counter data") from err
+            raise BadJSONError from err
 
         if alert_deployment_id is None:
             # No alert
             return AlertResults(alert_content="", alert_title="")
 
         alerts_url = ALERTS_URL.format(alert_deployment_id)
-        if websession is not None:
-            async with websession.get(alerts_url) as r:
-                data1 = await r.json()
-        else:
-            async with aiohttp.ClientSession() as session:
-                async with session.get(alerts_url) as r:
-                    data1 = await r.json()
+        data1 = await self.get_request(alerts_url, websession)
 
-        if r.status != 200:
-            raise HttpError("Error getting PECO outage counter data")
-
+        # There is always only one alert.
+        # Again, if anyone sees more than one alert, please open an issue.
         try:
             alert = data1["_embedded"]["deployedAlertResourceList"][0]["data"][
                 0
-            ]  # There is always only one alert. Again, if anyone sees more than one alert, please open an issue.
-        except KeyError as err:
+            ]
+        except KeyError:
             return AlertResults(
                 alert_content="",
                 alert_title="",
@@ -271,13 +245,22 @@ class AlertResults(BaseModel):
 class InvalidCountyError(ValueError):
     """Raised when the county is invalid."""
 
+    def __init__(self, county: str) -> None:
+        super().__init__(f"{county} is not a valid county")
+
 
 class HttpError(Exception):
-    """Raised when the status code is not 200."""
+    """Raised when an error during HTTP request occurs."""
+
+    def __init__(self):
+        super().__init__("Bad response from PECO")
 
 
 class BadJSONError(Exception):
     """Raised when the JSON is invalid."""
+
+    def __init__(self, message="Bad JSON returned from PECO"):
+        super().__init__(message)
 
 
 class MeterError(Exception):
@@ -287,6 +270,12 @@ class MeterError(Exception):
 class IncompatibleMeterError(MeterError):
     """Raised when the meter is not compatible with the API."""
 
+    def __init__(self):
+        super().__init__("Meter is not compatible with the API")
+
 
 class UnresponsiveMeterError(MeterError):
     """Raised when the meter is not responding."""
+
+    def __init__(self, message="Meter is not responding"):
+        super().__init__(message)
