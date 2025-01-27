@@ -107,7 +107,7 @@ class PecoOutageApi:
                 customers_served = area["cust_s"]
                 outage_result = OutageResults(
                     customers_out=customers_out,
-                    percent_customers_out=percent_customers_out,
+                    percent_customers_out=round(percent_customers_out),
                     outage_count=outage_count,
                     customers_served=customers_served,
                 )
@@ -135,7 +135,7 @@ class PecoOutageApi:
 
         return OutageResults(
             customers_out=totals["cust_a"]["val"],
-            percent_customers_out=totals["percent_cust_a"]["val"],
+            percent_customers_out=round(totals["percent_cust_a"]["val"]),
             outage_count=totals["n_out"],
             customers_served=totals["cust_s"],
         )
